@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import os
+import re
 from pathlib import Path
-from typing import ClassVar
 
 from textual import on, work
 from textual.app import App, ComposeResult, SystemCommand
-from textual.binding import Binding
-from textual.command import Provider
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Input, Label, Static, TextArea
-from textual.worker import Worker, WorkerState
+from textual.widgets import Input, Label
 from .main_window import MainScreen
 
 class WelcomeScreen(Screen):
@@ -41,8 +37,14 @@ class WelcomeScreen(Screen):
     def handle_project_input(self, event: Input.Submitted) -> None:
         """Handle project name submission."""
         project_name = event.value.strip()
-        if project_name:
-            self.setup_project(project_name)
+        status_label = self.query_one("#status-label", Label)
+        if not project_name:
+            status_label.update("Please enter a project name")
+            return
+        if not re.match(r'^[\w\-]+$', project_name):
+            status_label.update("Name can only contain letters, numbers, hyphens, underscores")
+            return
+        self.setup_project(project_name)
 
     @work(exclusive=True)
     async def setup_project(self, project_name: str) -> None:
@@ -56,24 +58,29 @@ class WelcomeScreen(Screen):
         status_label.update(f"Creating {project_path}...")
 
         try:
+            is_new = not project_path.exists()
             project_path.mkdir(parents=True, exist_ok=True)
 
-            # Run uv init
-            status_label.update("Running uv init...")
-            process = await asyncio.create_subprocess_exec(
-                "uv", "init", "--bare",
-                cwd=project_path,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            await process.wait()
+            if is_new:
+                # Only run uv init for new projects
+                status_label.update("Running uv init...")
+                process = await asyncio.create_subprocess_exec(
+                    "uv", "init", "--bare",
+                    cwd=project_path,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                await process.wait()
 
-            if process.returncode == 0:
-                self.app.push_screen(MainScreen(project_name, project_path))
+                if process.returncode != 0:
+                    stderr = await process.stderr.read()
+                    status_label.update(f"Error: {stderr.decode()}")
+                    project_input.disabled = False
+                    return
             else:
-                stderr = await process.stderr.read()
-                status_label.update(f"Error: {stderr.decode()}")
-                project_input.disabled = False
+                status_label.update("Opening existing project...")
+
+            self.app.push_screen(MainScreen(project_name, project_path))
         except Exception as e:
             status_label.update(f"Error: {e}")
             project_input.disabled = False

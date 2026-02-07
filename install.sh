@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="https://github.com/rafarayes/quickie.git"
+REPO="https://github.com/rafa-rrayes/quickie.git"
 
 echo "Installing Quickie..."
 

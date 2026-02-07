@@ -1,17 +1,16 @@
 import asyncio
-from dataclasses import dataclass, field
+import shlex
+from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
 from rich.style import Style
 from textual import events, on, work
-from textual.app import App, ComposeResult
+from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, Header, Input, Label, OptionList, RichLog, Static, TextArea
+from textual.widgets import Input, Label, OptionList, RichLog, TextArea
 from textual.widgets.option_list import Option
 from textual.widgets.text_area import TextAreaTheme
-from textual.worker import Worker, WorkerState
 from .config import config
 
 
@@ -321,16 +320,16 @@ class MainScreen(Screen):
 
         editor = self.query_one("#code-editor", TextArea)
 
-        # Create custom theme based on monokai with our custom colors
-        monokai_base = TextAreaTheme.get_builtin_theme("monokai")
+        # Create custom theme based on selected theme with our custom colors
+        theme_base = TextAreaTheme.get_builtin_theme(config.editor_theme)
         custom_theme = TextAreaTheme(
             name="quickie_custom",
             base_style=Style(bgcolor=config.textarea_bg_color),
             gutter_style=Style(bgcolor=config.textarea_bg_color),
-            cursor_style=monokai_base.cursor_style,
-            cursor_line_style=monokai_base.cursor_line_style,
-            selection_style=monokai_base.selection_style,
-            syntax_styles=monokai_base.syntax_styles,
+            cursor_style=theme_base.cursor_style,
+            cursor_line_style=theme_base.cursor_line_style,
+            selection_style=theme_base.selection_style,
+            syntax_styles=theme_base.syntax_styles,
         )
 
         # Register and apply custom theme
@@ -410,20 +409,27 @@ if __name__ == "__main__":
 
     def open_file(self, file_path: Path) -> None:
         """Open a file in the editor."""
-        # Load file content
-        content = ""
-        if file_path.exists():
-            try:
-                content = file_path.read_text()
-            except Exception:
-                content = ""
+        editor = self.query_one("#code-editor", TextArea)
 
-        # Store in open files
-        self.open_files[file_path] = OpenFile(path=file_path, content=content)
+        # Persist current editor state before switching
+        if self.active_file and self.active_file in self.open_files:
+            self.open_files[self.active_file].content = editor.text
+
+        # Load file content (reuse cached content if already open)
+        if file_path in self.open_files:
+            content = self.open_files[file_path].content
+        else:
+            content = ""
+            if file_path.exists():
+                try:
+                    content = file_path.read_text()
+                except Exception:
+                    content = ""
+            self.open_files[file_path] = OpenFile(path=file_path, content=content)
+
         self.active_file = file_path
 
         # Update editor
-        editor = self.query_one("#code-editor", TextArea)
         editor.text = content
         editor.border_title = file_path.name
         editor.language = self._get_language_for_file(file_path)
@@ -480,7 +486,7 @@ if __name__ == "__main__":
 
         # Run the active file
         rel_path = self.active_file.relative_to(self.project_path)
-        terminal.run_command(f"uv run {rel_path}")
+        terminal.run_command(f"uv run {shlex.quote(str(rel_path))}")
 
     def action_quick_open(self) -> None:
         """Open the quick open modal."""

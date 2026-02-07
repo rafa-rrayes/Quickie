@@ -8,14 +8,14 @@ A minimal Python scratchpad for quick, throwaway scripts. Open it, write code, r
 ## Install
 
 ```bash
-curl -LsSf https://raw.githubusercontent.com/rafarayes/quickie/main/install.sh | sh
+curl -LsSf https://raw.githubusercontent.com/rafa-rrayes/quickie/main/install.sh | sh
 ```
 
 Or manually with uv or pipx:
 
 ```bash
-uv tool install "quickie @ git+https://github.com/rafarayes/quickie.git"
-pipx install "git+https://github.com/rafarayes/quickie.git"
+uv tool install "quickie @ git+https://github.com/rafa-rrayes/quickie.git"
+pipx install "git+https://github.com/rafa-rrayes/quickie.git"
 ```
 
 ## Usage

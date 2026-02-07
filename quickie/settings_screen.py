@@ -2,11 +2,10 @@ from pathlib import Path
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Checkbox, Footer, Input, Label, Select, Static
 from .config import config
-import os
 
 class SettingsScreen(Screen):
     """Settings screen showing project structure and keyboard shortcuts."""
@@ -138,23 +137,6 @@ class SettingsScreen(Screen):
                 yield Static(self._get_shortcuts())
         yield Footer()
 
-    def _get_project_tree(self) -> str:
-        """Generate project tree structure."""
-        return f"""[dim]/[/]
-  [blue]Applications[/]
-  [blue]Library[/]
-  [blue]System[/]
-  [blue]Users[/]
-    [yellow][{os.getenv('USER', 'username')}][/]
-      [blue]Desktop[/]
-      [blue]Documents[/]
-      [blue]Downloads[/]
-      [blue]code[/]
-        [blue]{self.project_name}[/]
-          [dim]main.py[/]
-          [dim]requirements.txt[/]
-"""
-
     def _get_shortcuts(self) -> str:
         """Generate keyboard shortcuts."""
         return """[b]QUICKIE[/b]
@@ -255,9 +237,8 @@ class SettingsScreen(Screen):
         config.save()
 
     def action_start_editing(self) -> None:
-        """Start the main editor."""
-        from .main_window import MainScreen
-        self.app.push_screen(MainScreen(self.project_name, self.project_path))
+        """Return to the editor (pop settings screen)."""
+        self.app.pop_screen()
 
     def action_go_back(self) -> None:
         """Go back to welcome screen."""
