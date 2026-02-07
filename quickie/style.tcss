@@ -1,0 +1,32 @@
+WelcomeScreen {
+    align: center middle;
+    background: $surface;
+}
+
+#welcome-container {
+    width: 100%;
+    align: center middle;
+
+}
+
+#quickie-title {
+    width: 100%;
+    text-align: center;
+    text-style: bold;
+    content-align: center middle;
+    margin-top: 2;
+}
+
+#project-input {
+    width: 60%;
+    max-width: 60;
+    min-width: 20;
+    margin-top: 1;
+    margin-bottom: 2;
+    border: round $primary;
+    background: $surface;
+    align-horizontal: center;
+}
+#project-input:focus {
+    background-tint: $surface;
+}
